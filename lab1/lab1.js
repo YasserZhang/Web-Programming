@@ -50,9 +50,6 @@ const questionFour = function questionFour(num) {
 }
 
 module.exports = {
-    firstName: "Ning", 
-    lastName: "Zhang", 
-    studentId: "10431028",
     questionOne,
     questionTwo,
     questionThree,
