@@ -1,79 +1,52 @@
-const fileParser = require('./fileData');
-const textMetrics = require('./textMetrics');
-const bluebird = require('bluebird');
-const fs = bluebird.promisifyAll(require("fs"));
-/*
-Notes on asynchronous programming.
-you have to promisify file system module such that it return Promise.
-use await to fulfill the Promise returned by promisified fs.
-fs itself does not return Promise, and it only return normal value types.
-We use async/await because it both take advantage of asynchronous programming and the neatness of sequential code syntax in synchronous programming. In another word, we don't have to write infinite nested callback functions anymore!!
-*/
-function checkIsProperFilename(path, pathname){
-    if (!path) {
-        throw `Error: no path is provided. ${pathname} is not a path.`;
+const todoItems = require('./todo');
+const main = async () => {
+    var todoItemsTasks = await todoItems.getAllTasks();
+    for (let task of todoItemsTasks) {
+        await todoItems.removeTask(task._id);
     }
-    if (typeof path !== 'string') {
-        //console.log(typeof path);
-        throw `Error: ${pathname} is not valid input, and its type is ${typeof path}`;
-    }
-}
-
-async function main(filename){
-    checkIsProperFilename(filename, filename);
-    var filename_parts = filename.split('.')
-    var result = filename_parts[0] + '.result.json';
-    var exist = await fs.statAsync(result).then((stats) => {
-        return true;
-    }).catch((err) => {
-        return false;
-    });
-    if (exist) {
-        var file = await fileParser.getFileAsString(result);
-        console.log(`${result} already exists`);
-        console.log(file);
-        return;
-    }else {
-        throw `${filename} does not exist.`;
-    }
-    var simplifiedData = await fileParser.getFileAsString(filename).then((data) => {
-        data = textMetrics.simplify(data);
-        return data;
-    });
-
-    var finalData = await fileParser.saveStringToFile(filename_parts[0] + '.debug.txt', simplifiedData).then(
-        (flag) => {
-            if (flag) {
-                var finalData = textMetrics.createMetrics(simplifiedData);
-                return finalData;
-            }
-            return null;
+    let tasks = [
+        {
+            title: "Ponder Dinosaurs",
+            description: "Has Anyone Really Been Far Even as Decided to Use Even Go Want to do Look More Like?"
+        },
+        {
+            title: "Play Pokemon with Twitch TV",
+            description: "Should we revive Helix?"
         }
-    );
-    var savedFlag = false;
-    if (finalData !== null) {
-        savedFlag = await fileParser.saveJSONToFile(result, finalData);
-    }else {
-        throw `${filename_parts[0]}.debug.txt is not saved properly.`;
+    ]
+    for (task of tasks) {
+        await todoItems.createTask(task.title, task.description);
     }
-    console.log(finalData);
-
-    if (!savedFlag) {
-        throw `${filename_parts[0]}.result.json is not saved properly.`;
+    var todoItemsTasks = await todoItems.getAllTasks();
+    console.log("Task list: ");
+    console.log(todoItemsTasks);
+    let taskIdToRemove = todoItemsTasks[0]._id;
+    try {
+        let removed = await todoItems.removeTask(taskIdToRemove);
+        console.log(`Task ${taskIdToRemove} removed.`);
     }
-    return;
-}
+    catch(e) {
+        console.log("Error: ");
+        console.log(e);
+    }
+    /*
+    try {
+        const removeTask = await todoItems.getTask(taskIdToRemove);
+    }catch(e) {
+        console.log("Error: ");
+        console.log(e);
+        console.log("");
+    }
+    */
+    
+    var todoItemsTasks = await todoItems.getAllTasks();
+    console.log("Remaining Task list");
+    console.log(todoItemsTasks);
+    let taskCompleted = await todoItems.completeTask(todoItemsTasks[0]._id);
+    console.log("Completed Tasks: ");
+    console.log(taskCompleted);
+};
 
-filenames = ['chapter1.txt', 'chapter2.txt','chapter3.txt'];
-for (filename of filenames) {
-    var res = main(filename).catch((err) => {
-        console.log('errrr... something is wrong.')
-        console.log(err);
-    });
-}
-/*
-main('tr.t').catch(err => {
-    console.log('errrr... something is wrong.')
-    console.log(err);
-});
-*/
+main().catch( (error) => {
+    console.log(error);
+})
